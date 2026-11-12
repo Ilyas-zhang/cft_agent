@@ -1,0 +1,32 @@
+# CTF Agent — main controller image (runs the agent orchestrator, NOT the sandbox).
+# Build: docker build -f Dockerfile.agent -t ctf-agent .
+# Run:   mount the project (contains .env) and the Docker socket; never pass keys on the CLI:
+#        docker run --rm -v "<project>:/work" -v "//var/run/docker.sock:/var/run/docker.sock" ctf-agent
+
+FROM python:3.14-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TERM=xterm
+
+# ── System packages ───────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y \
+    curl git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── uv (fast Python package manager) ─────────────────────────────────────────
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:/root/.local/bin:$PATH"
+
+WORKDIR /app
+
+# ── Install Python dependencies ──────────────────────────────────────────────
+COPY pyproject.toml .
+COPY backend/ backend/
+COPY sandbox/ sandbox/
+COPY scripts/ scripts/
+COPY tests/ tests/
+
+RUN uv pip install --system -e ".[dev]" || pip install -e ".[dev]" || pip install -e .
+
+# ── Default entrypoint ───────────────────────────────────────────────────────
+ENTRYPOINT ["python", "-m", "backend.cli"]

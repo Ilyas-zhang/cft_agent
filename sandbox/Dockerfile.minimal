@@ -1,0 +1,50 @@
+# Minimal CTF sandbox image — lightweight alternative to the full Dockerfile.sandbox.
+# Build: docker build -f sandbox/Dockerfile.minimal -t ctf-sandbox .
+#
+# This image includes only essential tools for HTTP/TCP interaction and basic
+# crypto/math. After core flow is verified, switch to Dockerfile.sandbox for
+# the full CTF toolkit (angr, GDB, radare2, SageMath, etc.).
+
+# Python 3.13 (not 3.14): pwntools' unicorn dependency has no 3.14 wheel yet.
+FROM python:3.13-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TERM=xterm
+
+# ── System packages ───────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y \
+    # Networking
+    netcat-openbsd curl wget \
+    # Binary analysis (basic)
+    binutils file xxd bsdmainutils \
+    # Crypto
+    openssl libssl-dev \
+    # Build tools (needed for Python C extensions)
+    gcc g++ make cmake pkg-config \
+    # Misc
+    jq zip unzip ca-certificates git \
+    # Math libs
+    libgmp-dev libmpfr-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── uv (fast Python package manager) ─────────────────────────────────────────
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:/root/.local/bin:$PATH"
+
+# ── Python CTF libraries ─────────────────────────────────────────────────────
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir \
+    pwntools \
+    pycryptodome \
+    sympy \
+    gmpy2 \
+    requests \
+    z3-solver \
+    Pillow \
+    flask \
+    PyJWT
+
+# ── Tools reference ──────────────────────────────────────────────────────────
+COPY sandbox/sandbox-tools.minimal.txt /tools.txt
+
+WORKDIR /challenge

@@ -1,0 +1,21 @@
+Minimal CTF Sandbox Tools Reference
+====================================
+
+NETWORKING: nc (netcat), curl, wget
+
+BINARY ANALYSIS: file, strings, xxd, hexdump, objdump, readelf, nm
+
+CRYPTOGRAPHY: openssl
+
+BUILD TOOLS: gcc/g++, make/cmake, jq
+
+ARCHIVE: zip/unzip, git
+
+PYTHON 3 LIBRARIES: pwntools, pycryptodome, sympy, gmpy2, z3-solver, Pillow, requests, flask, PyJWT
+
+NOTES:
+- This is the MINIMAL sandbox for core flow verification.
+- For full CTF tooling, use the standard Dockerfile.sandbox instead.
+- Distfiles at /challenge/distfiles/ (read-only)
+- Workspace at /challenge/workspace/ (writable)
+- Host services reachable via host.docker.internal

@@ -1,0 +1,7 @@
+# Local MEA practice sandbox: ctf-sandbox + small forensic/crypto helpers.
+# Build: docker build -f sandbox/Dockerfile.mea -t ctf-sandbox-mea .
+FROM ctf-sandbox
+
+RUN pip install --no-cache-dir \
+    python-evtx \
+    pyzipper
