@@ -28,7 +28,7 @@ from backend.models import (
 from backend.output_types import FlagFound
 from backend.prompts import ChallengeMeta, build_prompt, list_distfiles
 from backend.sandbox import DockerSandbox
-from backend.solver_base import CANCELLED, CORRECT_MARKERS, ERROR, FLAG_FOUND, GAVE_UP, SolverResult
+from backend.solver_base import CORRECT_MARKERS, ERROR, FLAG_FOUND, GAVE_UP, SolverResult
 from backend.tools.flag import submit_flag
 from backend.tools.interactive import INTERACTIVE_TOOLS, cleanup_solver_sessions
 from backend.tools.sandbox import (
@@ -99,6 +99,8 @@ def _build_toolset(deps: SolverDeps) -> FunctionToolset[SolverDeps]:
     """Build the raw toolset for a solver agent."""
     tools = [bash, read_file, write_file, list_files, submit_flag, web_fetch,
              webhook_create, webhook_get_requests, check_findings, notify_coordinator]
+    if deps.competition_mode:
+        tools = [t for t in tools if t not in (web_fetch, webhook_create, webhook_get_requests)]
     tools.extend(INTERACTIVE_TOOLS)
     if deps.use_vision:
         tools.append(view_image)
@@ -134,6 +136,10 @@ class Solver:
             image=getattr(settings, "sandbox_image", "ctf-sandbox"),
             challenge_dir=challenge_dir,
             memory_limit=getattr(settings, "container_memory_limit", "4g"),
+            network_mode=getattr(settings, "sandbox_network_mode", "bridge"),
+            cpus=getattr(settings, "container_cpus", 2.0),
+            preserve_workspace=getattr(settings, "preserve_workspaces", False),
+            extra_capabilities=getattr(settings, "sandbox_extra_capabilities", True),
         )
         self.use_vision = supports_vision(model_spec)
         self.deps = SolverDeps(
@@ -145,6 +151,7 @@ class Solver:
             use_vision=self.use_vision,
             cost_tracker=cost_tracker,
             session_scope=f"{meta.name}:{self.model_id}:{id(self):x}",
+            competition_mode=getattr(settings, "tpctf_competition_mode", False),
         )
         self.loop_detector = LoopDetector()
         self.tracer = SolverTracer(meta.name, self.model_id)
@@ -171,6 +178,9 @@ class Solver:
             distfile_names,
             container_arch=container_arch,
         )
+        if self.deps.competition_mode:
+            system_prompt = system_prompt.replace("For XSS/SSRF: use `webhook_create`.", "No public callback services are available.")
+            system_prompt += "\nWork only on the assigned endpoints. Dependencies are preinstalled; public internet is unavailable. Solve and submit only the CURRENT QUESTION in the description."
 
         model = resolve_model(self.model_spec, self.settings)
         model_settings = resolve_model_settings(self.model_spec, self.settings)
@@ -208,7 +218,10 @@ class Solver:
                 "Solve this CTF challenge." if not self._messages else "Continue solving.",
                 deps=self.deps,
                 message_history=self._messages if self._messages else None,
-                usage_limits=UsageLimits(request_limit=None),
+                usage_limits=UsageLimits(
+                    request_limit=getattr(self.settings, "solver_request_limit", 80),
+                    total_tokens_limit=getattr(self.settings, "solver_token_limit", 2_000_000),
+                ),
             )
 
             duration = time.monotonic() - t0
@@ -261,7 +274,7 @@ class Solver:
             return self._result(GAVE_UP)
 
         except asyncio.CancelledError:
-            return self._result(CANCELLED)
+            raise
         except Exception as e:
             logger.error(f"[{self.agent_name}] Error: {e}", exc_info=True)
             self._findings = f"Error: {e}"

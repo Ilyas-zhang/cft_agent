@@ -96,15 +96,15 @@ class HttpSession:
 
         while True:
             try:
+                client.cookies.update(extra_cookies)
                 resp = await client.request(
-                    method if not redirect_chain else "GET",
+                    method,
                     current_url,
                     headers=headers,
                     params=params,
                     content=content,
                     data=data,
                     json=json_data,
-                    cookies=extra_cookies,
                 )
             except Exception as e:
                 return f"HTTP request error: {e}"
@@ -114,7 +114,7 @@ class HttpSession:
             # Record in history
             entry = {
                 "request": {
-                    "method": method if not redirect_chain else "GET",
+                    "method": method,
                     "url": current_url,
                     "request_number": self._request_count,
                 },
@@ -124,9 +124,11 @@ class HttpSession:
                     "headers": dict(resp.headers),
                     "url": str(resp.url),
                     "content_length": len(resp.content),
+                    "body": _truncate(resp.text),
                 },
             }
             self._history.append(entry)
+            self._history = self._history[-100:]
 
             # Handle redirects
             if resp.status_code in (301, 302, 303, 307, 308) and remaining_redirects > 0:
@@ -138,12 +140,23 @@ class HttpSession:
                     from urllib.parse import urljoin
                     location = urljoin(str(resp.url), location)
                 redirect_chain.append(f"{resp.status_code} → {location}")
+                from urllib.parse import urlsplit
+                if urlsplit(location).netloc != urlsplit(current_url).netloc:
+                    headers = {k: v for k, v in (headers or {}).items()
+                               if k.lower() not in {"authorization", "cookie", "proxy-authorization"}}
                 current_url = location
                 remaining_redirects -= 1
-                # For 303, switch to GET
-                if resp.status_code == 303:
+                params = None
+                extra_cookies = {}
+                # Preserve method and body for 307/308. Conventional 301/302
+                # POST and 303 redirects switch to GET and drop their body.
+                if (resp.status_code == 303 and method.upper() != "HEAD") or (
+                    resp.status_code in (301, 302) and method.upper() == "POST"
+                ):
                     method = "GET"
                     content = data = json_data = None
+                    headers = {k: v for k, v in (headers or {}).items()
+                               if k.lower() not in {"content-type", "content-length"}}
                 continue
             break
 

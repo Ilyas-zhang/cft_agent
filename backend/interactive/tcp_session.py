@@ -46,7 +46,8 @@ class TcpSession:
     def connected(self) -> bool:
         return self._connected and self._writer is not None and not self._writer.is_closing()
 
-    async def connect(self, host: str, port: int, timeout: float = DEFAULT_TIMEOUT) -> str:
+    async def connect(self, host: str, port: int, timeout: float = DEFAULT_TIMEOUT,
+                      use_tls: bool = False, server_hostname: str = "") -> str:
         """Connect to a TCP service."""
         if self.connected:
             await self.disconnect()
@@ -56,7 +57,7 @@ class TcpSession:
 
         try:
             self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(host, port),
+                asyncio.open_connection(host, port, **({"ssl": True, "server_hostname": server_hostname or host} if use_tls else {})),
                 timeout=timeout,
             )
             self._connected = True
@@ -291,7 +292,8 @@ class TcpSession:
 # ── High-level API functions ───────────────────────────────────────────────
 
 
-async def tcp_connect(host: str, port: int, session_id: str = "default", timeout: float = DEFAULT_TIMEOUT, scope: str = "") -> str:
+async def tcp_connect(host: str, port: int, session_id: str = "default", timeout: float = DEFAULT_TIMEOUT,
+                      scope: str = "", use_tls: bool = False, server_hostname: str = "") -> str:
     """Connect to a TCP service and return initial banner/data if any.
 
     Creates a persistent session for multi-round interaction.
@@ -301,7 +303,7 @@ async def tcp_connect(host: str, port: int, session_id: str = "default", timeout
         _sessions[key] = TcpSession(session_id=session_id)
     session = _sessions[key]
 
-    connect_result = await session.connect(host, port, timeout=timeout)
+    connect_result = await session.connect(host, port, timeout=timeout, use_tls=use_tls, server_hostname=server_hostname)
     if "failed" in connect_result.lower():
         return connect_result
 

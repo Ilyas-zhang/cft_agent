@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from backend.message_bus import ChallengeMessageBus
 
 # Type for the deduped submit callback: (flag) -> (display, is_confirmed)
-SubmitFn = Callable[[str], Coroutine[Any, Any, tuple[str, bool]]]
+SubmitFn = Callable[[str | list[str]], Coroutine[Any, Any, tuple[str, bool]]]
 
 
 @dataclass
@@ -34,6 +34,7 @@ class SolverDeps:
     no_submit: bool = False
     notify_coordinator: Callable[[str], Coroutine[Any, Any, None]] | None = None
     session_scope: str = ""  # isolates HTTP/TCP session registries per solver
+    competition_mode: bool = False
 
 
 @dataclass

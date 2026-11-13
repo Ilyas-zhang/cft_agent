@@ -19,7 +19,8 @@ build/
 .venv/
 .mypy_cache/
 .ruff_cache/
-uv.lock
+runtime/
+*.conf
 
 # Runtime
 workspace/

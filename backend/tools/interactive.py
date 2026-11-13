@@ -101,6 +101,8 @@ async def tcp_connect(
     port: int,
     session_id: str = "default",
     timeout: float = 30.0,
+    use_tls: bool = False,
+    server_hostname: str = "",
 ) -> str:
     """Open a persistent TCP connection and return the initial banner.
 
@@ -108,7 +110,8 @@ async def tcp_connect(
     for multi-round menu interaction. The connection stays open between calls.
     """
     return await _tcp.tcp_connect(
-        host=host, port=port, session_id=session_id, timeout=timeout, scope=_scope(ctx)
+    host=host, port=port, session_id=session_id, timeout=timeout, scope=_scope(ctx),
+    use_tls=use_tls, server_hostname=server_hostname,
     )
 
 

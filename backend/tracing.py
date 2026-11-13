@@ -19,7 +19,7 @@ class SolverTracer:
         Path(log_dir).mkdir(parents=True, exist_ok=True)
         ts = time.strftime("%Y%m%d-%H%M%S")
         self.path = str(Path(log_dir) / f"trace-{_sanitize(challenge_name)}-{_sanitize(model_id)}-{ts}.jsonl")
-        self._fh = open(self.path, "a")
+        self._fh = open(self.path, "a", encoding="utf-8")
         atexit.register(self._close)
 
     def close(self) -> None:
@@ -41,10 +41,10 @@ class SolverTracer:
 
     def tool_call(self, tool_name: str, args: dict | str, step: int) -> None:
         args_str = args if isinstance(args, str) else json.dumps(args)
-        self._write({"type": "tool_call", "tool": tool_name, "args": args_str[:2000], "step": step})
+        self._write({"type": "tool_call", "tool": tool_name, "args": args_str, "step": step})
 
     def tool_result(self, tool_name: str, result: str, step: int) -> None:
-        self._write({"type": "tool_result", "tool": tool_name, "result": result[:2000], "step": step})
+        self._write({"type": "tool_result", "tool": tool_name, "result": result, "step": step})
 
     def model_response(self, text: str, step: int, input_tokens: int = 0, output_tokens: int = 0) -> None:
         self._write({"type": "model_response", "text": text[:1000], "step": step,

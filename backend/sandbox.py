@@ -117,6 +117,10 @@ class DockerSandbox:
     image: str
     challenge_dir: str
     memory_limit: str = "16g"
+    network_mode: str = "bridge"
+    cpus: float = 2.0
+    preserve_workspace: bool = False
+    extra_capabilities: bool = True
     workspace_dir: str = ""
     _container: Any = field(default=None, repr=False)
     _docker: Any = field(default=None, repr=False)
@@ -171,6 +175,7 @@ class DockerSandbox:
                 "ExtraHosts": ["host.docker.internal:host-gateway"],
                 "Memory": self._parse_memory_limit(),
                 "NanoCpus": int(getattr(self, "cpus", 2.0) * 1e9),
+                "NetworkMode": self.network_mode,
             }
             # Privileged extras — may be unavailable on some Docker Desktop setups.
             # Try with them first, fall back without.
@@ -192,7 +197,7 @@ class DockerSandbox:
                 }
 
             try:
-                self._container = await self._docker.containers.create(_config(hardened_host_config))
+                self._container = await self._docker.containers.create(_config(hardened_host_config if self.extra_capabilities else base_host_config))
             except aiodocker.exceptions.DockerError as e:
                 logger.warning(
                     "Sandbox create with extra capabilities failed (%s) — retrying minimal config",
@@ -344,7 +349,7 @@ class DockerSandbox:
                 pass
             self._docker = None
 
-        if self.workspace_dir:
+        if self.workspace_dir and not self.preserve_workspace:
             import shutil
             try:
                 shutil.rmtree(self.workspace_dir, ignore_errors=True)

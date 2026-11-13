@@ -1,5 +1,8 @@
 # CTF Agent — GLM-5.1 Fork
 
+> **TPCTF 14 日 / 15 日入口：**使用 `python -m backend.tpctf`，部署、私有配置与验收步骤见
+> [docs/TPCTF_P0.md](docs/TPCTF_P0.md)。下文原有 `ctf-solve` / PowerShell 示例用于 CTFd，不能仅改 URL 后接 CTFy。
+
 # ***别动键鼠，正在远程！！！***
 
 > 本仓库是 [`verialabs/ctf-agent`](https://github.com/verialabs/ctf-agent) 的 GLM-5.1 改造版：

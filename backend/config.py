@@ -12,10 +12,31 @@ _SENSITIVE_FIELDS = frozenset({
     "aws_bearer_token",
     "azure_openai_api_key",
     "opencode_zen_api_key",
+    "ctfd_token", "ctfd_pass", "ctfy_token",
 })
 
 
 class Settings(BaseSettings):
+    # TPCTF player API and stage configuration (separate from legacy CTFd).
+    ctfy_url: str = "https://ctfy.tsinghua.edu.cn"
+    ctfy_token: str = ""
+    ctfy_competition_id: str = ""
+    tpctf_stage: str = "qualifier"
+    tpctf_model_protocol: str = "anthropic"
+    tpctf_runtime: str = "runtime/tpctf"
+    tpctf_concurrency: int = 1
+    tpctf_question_seconds: int = 600
+    tpctf_challenge_seconds: int = 1800
+    tpctf_question_attempts: int = 2
+    tpctf_poll_seconds: float = 15
+    tpctf_vpn_mode: str = "auto"
+    tpctf_gateway_host: str = ""
+    tpctf_competition_mode: bool = False
+    solver_request_limit: int = 80
+    solver_token_limit: int = 2_000_000
+    sandbox_network_mode: str = "bridge"
+    preserve_workspaces: bool = False
+    sandbox_extra_capabilities: bool = True
     # CTFd
     ctfd_url: str = "http://localhost:8000"
     ctfd_user: str = "admin"
@@ -25,6 +46,7 @@ class Settings(BaseSettings):
     # API Keys
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    openai_base_url: str = ""
     gemini_api_key: str = ""
 
     # Provider-specific (optional, for Bedrock/Azure/Zen fallback)

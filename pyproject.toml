@@ -4,12 +4,11 @@ version = "0.1.0"
 description = "CTF agent v2 — multi-model solver swarm"
 requires-python = ">=3.14"
 dependencies = [
-    "pydantic-ai[bedrock,openai,google]",
+    "pydantic-ai-slim[anthropic,bedrock,openai,google,zai]==2.68.0",
     "pydantic-settings",
     "genai-prices",
     "boto3",
     "aiodocker",
-    "claude-agent-sdk",
     "httpx",
     "pyyaml",
     "rich",
@@ -20,6 +19,10 @@ dependencies = [
 [project.scripts]
 ctf-solve = "backend.cli:main"
 ctf-msg = "backend.cli:msg"
+ctf-tpctf = "backend.tpctf:main"
+
+[project.optional-dependencies]
+legacy = ["claude-agent-sdk"]
 
 [build-system]
 requires = ["hatchling"]
@@ -27,6 +30,9 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 package = true
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
 
 [dependency-groups]
 dev = [

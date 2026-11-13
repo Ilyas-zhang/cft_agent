@@ -69,6 +69,12 @@ def resolve_model(spec: str, settings: Settings) -> Model:
     provider = provider_from_spec(spec)
     model_id = model_id_from_spec(spec)
     match provider:
+        case "openai":
+            if not settings.openai_api_key or not settings.openai_base_url:
+                raise ValueError("OPENAI_API_KEY and OPENAI_BASE_URL are required")
+            return OpenAIChatModel(model_id, provider=OpenAIProvider(
+                base_url=settings.openai_base_url, api_key=settings.openai_api_key,
+            ))
         case "anthropic":
             # Anthropic Messages-compatible endpoint (GLM-5.1 or any compatible API)
             api_key = settings.anthropic_api_key
@@ -168,7 +174,7 @@ def resolve_model_settings(spec: str, settings: Settings | None = None) -> Model
                 bedrock_cache_tool_definitions=True,
                 bedrock_cache_messages=True,
             )
-        case "azure" | "zen":
+        case "openai" | "azure" | "zen":
             # OpenAI-compatible chat completions — prompt caching is automatic
             return OpenAIChatModelSettings(**common)
         case "google":
